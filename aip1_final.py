@@ -82,7 +82,7 @@ class DDQNAgent:
         
     def train_step(self):
         mini_batch  = random.sample(self.memory, self.batch_size)
-        #memory deque has as each entry (self, state, action , reward, next_state, done)
+        #memory deque has as each entry (state, action , reward, next_state, done)
         states = [i[0] for i in mini_batch]
         actions = [i[1] for i in mini_batch]
         rewards = [i[2] for i in mini_batch]
@@ -94,4 +94,16 @@ class DDQNAgent:
             states = tf.convert_to_tensor(np.vstack(states), dtype = tf.float32)
             actions = tf.convert_to_tensor(actions, dtype = tf.int32)
             rewards  = tf.convert_to_tensor(rewards, dtype = tf.float32)
-            next_states = tf.convert
+            next_states = tf.convert_to_tensor(np.vstack(next_states), dtype = tf.float32)
+            dones = tf.convert_to_tensor(dones, dtype = tf.float32)
+
+
+            cur_Qs = self.dqn_policy(states)
+            main_value = tf.reduce_sum(tf.one_hot(actions,self.action_size)*cur_Qs, axis = 1)
+
+            next_Q_targs = self.dqn_target(next_states)
+            next_action = tf.argmax(next_Q_targs, axis = 1)
+
+
+            mask = 1 - dones
+            target_value = rewards + self.gama
