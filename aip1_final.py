@@ -107,3 +107,67 @@ class DDQNAgent:
 
             mask = 1 - dones
             target_value = rewards + self.gama
+            
+            error = tf.square(main_value-target_value)*0.5
+            loss  = tf.reduce_mean(error)
+        
+        dqn_grads = tape.gradient (loss, dqn_variable)
+        self.optimizers.apply_gradients(zip(dqn_grads, dqn_varible))
+    
+
+
+
+# main running code
+env_name = "CartPole-v0"
+env = gym.make 
+target_update = 100
+
+
+hidden_size = 128
+max_episodes = 300
+batch_size = 64
+
+epsilon = 1.0
+max_epsilon =1.0
+min_epsilon = 0.01
+decay_rate = 0.005
+
+agent = DDQNAgent(env, batch_size, target_update)
+
+if __name__ == "__main__":
+    update_cnt = 0
+    scores = []
+
+
+    for episode in range(max_episodes):
+        state = agent.env.reset()
+        episode_reward = 0
+        done = False
+
+        while not done :
+                action = agent.get_action(state, epsilon)
+
+                next_state, reward, done , info = agent.env.step(action)
+                agent.append_sample(state,action, reward, next_state, done)
+
+                state = next_state
+                epsilon_reward +=reward 
+
+
+                if done :
+                    scores.append(episode_reward)
+                    print("Episode "+str(episode+1)+": "+str(episode_reward))
+                    break
+                    
+                if(len(agent.memory)>=agent.batch_size):
+                        agent.train_step()
+                        update_cnt+=1
+
+                        if update_cnt%agent.target_update ==0:
+                             agetn._target_hard_update()
+
+        
+        epsilon = min_epsilon+(max_epsilon-min_epsilon)*np.exp(-decay_rate*episode)
+
+
+
