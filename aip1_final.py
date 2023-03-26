@@ -48,7 +48,7 @@ class DDQNAgent:
     def __init__(
             self, 
             env: gym.Env,
-            batch_size: int
+            batch_size: int,
             target_update:int
             ):
 
@@ -112,7 +112,7 @@ class DDQNAgent:
             loss  = tf.reduce_mean(error)
         
         dqn_grads = tape.gradient (loss, dqn_variable)
-        self.optimizers.apply_gradients(zip(dqn_grads, dqn_varible))
+        self.optimizers.apply_gradients(zip(dqn_grads, dqn_variable))
     
 
 
@@ -151,7 +151,7 @@ if __name__ == "__main__":
                 agent.append_sample(state,action, reward, next_state, done)
 
                 state = next_state
-                epsilon_reward +=reward 
+                episode_reward +=reward 
 
 
                 if done :
@@ -164,7 +164,7 @@ if __name__ == "__main__":
                         update_cnt+=1
 
                         if update_cnt%agent.target_update ==0:
-                             agetn._target_hard_update()
+                             agent._target_hard_update()
 
         
         epsilon = min_epsilon+(max_epsilon-min_epsilon)*np.exp(-decay_rate*episode)
