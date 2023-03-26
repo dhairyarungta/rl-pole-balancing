@@ -25,7 +25,7 @@ import numpy as np
 
 import tensorflow as tf
 from tensorflow.keras import optimizers, losses
-from tesorflow.keras import Model 
+from tensorflow.keras import Model 
 from collections import deque
 
 from IPython.display import clear_output
@@ -61,6 +61,8 @@ class DDQNAgent:
         self.gamma = 0.99
         self.dqn_policy = Network (self.state_size, self.action_size)
         self.dqn_target = Network(self.state_size, self.action_size)
+        self.memory = deque(maxlen = 2000)
+
         self._target_hard_update()
     
     def get_action(self, state, epsilon):
@@ -73,10 +75,10 @@ class DDQNAgent:
         return action
     
     def _target_hard_update(self):
-        self.dqn_target.set_weights(self.dqn.get_weights())
+        self.dqn_target.set_weights(self.dqn_policy.get_weights())
     
     def append_sample(self, state, action , reward, next_state, done):
-        self.memory.append (state,action, reward, next_state, done)
+        self.memory.append ((state,action, reward, next_state, done))
     
 
         
@@ -90,7 +92,8 @@ class DDQNAgent:
         dones = [i[4] for i in mini_batch]
 
         dqn_variable = self.dqn_policy.trainable_variables 
-        with tf.GradientTape as tape :
+        with tf.GradientTape() as tape :
+            tape.watch(dqn_variable)
             states = tf.convert_to_tensor(np.vstack(states), dtype = tf.float32)
             actions = tf.convert_to_tensor(actions, dtype = tf.int32)
             rewards  = tf.convert_to_tensor(rewards, dtype = tf.float32)
