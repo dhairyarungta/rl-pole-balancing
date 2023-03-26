@@ -86,10 +86,76 @@ class DQNAgent :
             return 
         batch_size = min(self.batch_size, len (self.memory))
         mini_batch = random.sample(self.memory, batch_size)
-        state_batch, q_values_bach = [],[]
+        state_batch, q_values_batch = [],[]
 
         for state,action , reward,next_state, done in mini_batch:
             q_values_cs = self.model.predict(state)
             max_q_value_ns = self.get_target_q_value(next_state)
+            if done :
+                q_values_cs[0][action]= reward
+            else :
+                q_values_cs[0][action] =reward + (self.discount_factor*max_q_value_ns)
+                state_batch.append(state[0])
+                q_values_batch.append(q_values_cs[0])
+        
+        self.model.fit(np.array(state_batch),np.array(q_values_batch),batch_size=batch_size,epochs = 1, verbose = 0)
+        self.update_epsilon()
+    
+    def update_epsilon(self):
+        if self.epsilon > self.epsilon_min:
+            self.epsilon *=self.epsilon_decay
+        
+    
 
             
+        
+
+
+if __name__ == "__main__":
+    env = gym.make('CartPole-v0')
+
+    state_size = env.observation_space.shape[0]
+    action_size = env.action_space.n
+
+    agent = DQNAgent(state_size, action_size)
+    last100Scores = deque(maxlen=100)
+    stepCounter = 0
+    max_steps =1
+    frames  =[]
+    Scores, episode = [],[]
+    avg100Scores = []
+    avgScores =[]
+    for e in range (EPISODES):
+        done  = False
+        t = 0
+        state = env.reset()
+        state = np.reshape(state, [1,state_size])
+        while not done :
+            action = agent.get_action(state)
+            next_state , reward, done , info = env.step(action)
+            next_state = np.reshape(next_state, [1,state_size])
+            reward= reward if not done else -100
+
+            agent.append_sample(state, action, reward, next_state,done )
+            agent.experience_replay()
+
+            t+=1
+            stepCounter+=1
+            state = next_state
+
+            if done :
+                agent.update_target_model()
+                Scores.append(t)
+                avgScores.append(np.mean(Scores))
+                last100Scores.append(t)
+                avg100Scores.append(np.mean(last100Scores))
+
+                episode.append(e)
+                print("episode: {}, score: {}, memory length: {}, epsilon: {}".format(e, t, len(agent.memory), agent.epsilon))
+
+                # with open()
+
+                break
+            
+    env.close()
+
